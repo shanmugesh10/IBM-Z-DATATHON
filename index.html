@@ -1,0 +1,2049 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Object Detection &amp; Model Inspection Console</title>
+<style>
+:root {
+  --bg: #f4f5f7;
+  --surface: #ffffff;
+  --surface-alt: #f9fafb;
+  --surface-active: #edf2f7;
+  --border: #d0d7de;
+  --border-light: #e5e7eb;
+  --border-focus: #1d5b79;
+  --text-main: #1f2937;
+  --text-secondary: #4b5563;
+  --text-muted: #6b7280;
+  --text-inverse: #ffffff;
+  --accent: #1d5b79;
+  --accent-hover: #16465d;
+  --accent-subtle: #eaf2f6;
+  --accent-border: #b6d0de;
+  --green: #047857;
+  --green-bg: #ecfdf5;
+  --green-border: #a7f3d0;
+  --amber: #b45309;
+  --amber-bg: #fffbeb;
+  --amber-border: #fde68a;
+  --red: #b91c1c;
+  --red-bg: #fef2f2;
+  --red-border: #fecaca;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: var(--sans);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-main);
+  background-color: var(--bg);
+}
+
+button, input, select {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+
+button { cursor: pointer; }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.app-container {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* Sidebar Navigation */
+.sidebar {
+  width: 220px;
+  background: #ffffff;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+.sidebar-header {
+  padding: 16px 14px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.sidebar-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sidebar-subtitle {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 3px;
+}
+
+.nav-group-label {
+  padding: 14px 14px 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.nav-menu {
+  display: flex;
+  flex-direction: column;
+  padding: 0 8px;
+  gap: 2px;
+}
+
+.nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-secondary);
+  text-align: left;
+  font-size: 12px;
+  font-weight: 500;
+  transition: background 0.1s, color 0.1s;
+}
+
+.nav-btn:hover {
+  background: var(--surface-alt);
+  color: var(--text-main);
+  border-color: var(--border-light);
+}
+
+.nav-btn.active {
+  background: var(--accent-subtle);
+  color: var(--accent);
+  border-color: var(--accent-border);
+  font-weight: 600;
+}
+
+.nav-icon {
+  width: 14px;
+  height: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-family: var(--mono);
+  color: inherit;
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  padding: 12px;
+  border-top: 1px solid var(--border-light);
+  background: var(--surface-alt);
+}
+
+.system-meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.system-meta-row:last-child { margin-bottom: 0; }
+.system-meta-row strong { color: var(--text-secondary); font-family: var(--mono); }
+
+/* Main Stage */
+.main-stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--bg);
+}
+
+/* Topbar */
+.topbar {
+  height: 48px;
+  background: #ffffff;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  gap: 16px;
+}
+
+.breadcrumb {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.breadcrumb-module {
+  color: var(--text-main);
+  font-weight: 600;
+}
+
+.topbar-indicators {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Badges & Tags */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 7px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  font-family: var(--mono);
+  text-transform: uppercase;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.badge-neutral { background: #f3f4f6; color: #4b5563; border-color: #e5e7eb; }
+.badge-ready { background: var(--green-bg); color: var(--green); border-color: var(--green-border); }
+.badge-pending { background: var(--amber-bg); color: var(--amber); border-color: var(--amber-border); }
+.badge-alert { background: var(--red-bg); color: var(--red); border-color: var(--red-border); }
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.dot-neutral { background: #9ca3af; }
+.dot-ready { background: #10b981; }
+.dot-pending { background: #f59e0b; }
+.dot-alert { background: #ef4444; }
+
+/* Content Area */
+.content-area {
+  flex: 1;
+  padding: 20px;
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.view-section {
+  display: none;
+}
+
+.view-section.active {
+  display: block;
+}
+
+/* Page Headers */
+.view-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.view-title-group h1 {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text-main);
+  margin: 0;
+  line-height: 1.3;
+}
+
+.view-title-group p {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 4px 0 0;
+}
+
+.view-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  transition: all 0.12s ease;
+  line-height: 1.4;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: var(--text-inverse);
+  border-color: var(--accent);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+.btn-secondary {
+  background: #ffffff;
+  color: var(--text-secondary);
+  border-color: var(--border);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--surface-alt);
+  color: var(--text-main);
+  border-color: #b0b7be;
+}
+
+.btn-sm {
+  padding: 4px 8px;
+  font-size: 10px;
+}
+
+/* Layout Grids */
+.grid { display: grid; gap: 14px; }
+.grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.grid-split { grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr); }
+
+/* Panels */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.panel-header {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface-alt);
+}
+
+.panel-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.panel-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.panel-body {
+  padding: 14px;
+}
+
+/* Metric / Stat Boxes */
+.metric-box {
+  padding: 12px 14px;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.metric-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.metric-value {
+  font-size: 20px;
+  font-weight: 600;
+  font-family: var(--mono);
+  color: var(--text-main);
+  margin: 6px 0 2px;
+  font-variant-numeric: tabular-nums;
+}
+
+.metric-foot {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+/* Key-Value Properties Table */
+.spec-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.spec-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-light);
+  font-size: 11px;
+}
+
+.spec-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.spec-key {
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.spec-val {
+  font-weight: 500;
+  font-family: var(--mono);
+}
+
+/* Callout / Technical Notice */
+.tech-notice {
+  padding: 10px 12px;
+  border-radius: 4px;
+  font-size: 11px;
+  line-height: 1.5;
+  border: 1px solid var(--border);
+  background: var(--surface-alt);
+  color: var(--text-secondary);
+  margin-top: 12px;
+}
+
+.tech-notice strong {
+  color: var(--text-main);
+}
+
+.tech-notice.warn {
+  background: var(--amber-bg);
+  border-color: var(--amber-border);
+  color: var(--amber);
+}
+
+.tech-notice.error {
+  background: var(--red-bg);
+  border-color: var(--red-border);
+  color: var(--red);
+}
+
+.tech-notice.success {
+  background: var(--green-bg);
+  border-color: var(--green-border);
+  color: var(--green);
+}
+
+/* Tables */
+.table-container {
+  overflow-x: auto;
+}
+
+table.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+  text-align: left;
+}
+
+table.data-table th {
+  padding: 8px 10px;
+  background: var(--surface-alt);
+  border-bottom: 1px solid var(--border);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+}
+
+table.data-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border-light);
+  color: var(--text-main);
+  vertical-align: middle;
+}
+
+table.data-table tr:last-child td {
+  border-bottom: none;
+}
+
+table.data-table td.mono {
+  font-family: var(--mono);
+}
+
+.empty-cell {
+  text-align: center;
+  padding: 24px !important;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+/* Dropzone & Preview */
+.dropzone-box {
+  min-height: 240px;
+  border: 1px dashed var(--border);
+  border-radius: 4px;
+  background: var(--surface-alt);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  position: relative;
+  cursor: pointer;
+  transition: border-color 0.12s, background-color 0.12s;
+  overflow: hidden;
+}
+
+.dropzone-box:hover, .dropzone-box.drag {
+  border-color: var(--accent);
+  background: #f0f6fa;
+}
+
+.drop-prompt {
+  padding: 20px;
+}
+
+.drop-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.drop-subtitle {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.drop-badge {
+  display: inline-block;
+  margin-top: 10px;
+  padding: 4px 8px;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.image-preview-frame {
+  display: none;
+  width: 100%;
+  max-height: 320px;
+  object-fit: contain;
+  background: #111827;
+}
+
+.image-tag-bar {
+  display: none;
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  right: 8px;
+  padding: 6px 10px;
+  background: rgba(17, 24, 39, 0.85);
+  color: #f9fafb;
+  font-size: 10px;
+  font-family: var(--mono);
+  border-radius: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.metadata-grid {
+  display: none;
+  grid-template-columns: 1.4fr 1fr 1fr;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.meta-field {
+  padding: 6px 8px;
+  background: var(--surface-alt);
+  border: 1px solid var(--border-light);
+  border-radius: 3px;
+}
+
+.meta-field-label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.meta-field-val {
+  font-size: 11px;
+  font-family: var(--mono);
+  font-weight: 600;
+  color: var(--text-main);
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.control-bar {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* Response Terminal / Viewer */
+.terminal-stage {
+  min-height: 240px;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+}
+
+.terminal-header {
+  padding: 6px 10px;
+  background: var(--surface-alt);
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10px;
+  font-family: var(--mono);
+  color: var(--text-muted);
+}
+
+.terminal-content {
+  flex: 1;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+}
+
+.terminal-empty {
+  text-align: center;
+  color: var(--text-muted);
+  max-width: 260px;
+}
+
+.terminal-empty-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.terminal-empty-text {
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.terminal-code {
+  display: none;
+  width: 100%;
+  max-height: 360px;
+  overflow: auto;
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1.6;
+  color: #1f2937;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Forms */
+.form-group {
+  margin-bottom: 12px;
+}
+
+.form-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-main);
+  margin-bottom: 4px;
+}
+
+.form-input {
+  width: 100%;
+  padding: 7px 10px;
+  font-size: 11px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  background: #ffffff;
+  color: var(--text-main);
+  outline: none;
+}
+
+.form-input:focus {
+  border-color: var(--border-focus);
+}
+
+.form-input[readonly] {
+  background: var(--surface-alt);
+  color: var(--text-secondary);
+}
+
+.form-hint {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 3px;
+}
+
+/* Activity Items */
+.activity-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-light);
+  font-size: 11px;
+}
+
+.activity-row:last-child {
+  border-bottom: none;
+}
+
+.activity-title {
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.activity-sub {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.activity-time {
+  font-size: 10px;
+  font-family: var(--mono);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* Quick Action Row */
+.action-panel-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: #ffffff;
+  text-align: left;
+  width: 100%;
+  margin-bottom: 8px;
+  transition: background 0.1s, border-color 0.1s;
+}
+
+.action-panel-btn:last-child { margin-bottom: 0; }
+
+.action-panel-btn:hover {
+  background: var(--surface-alt);
+  border-color: #b0b7be;
+}
+
+.action-btn-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.action-btn-desc {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.action-btn-arrow {
+  color: var(--text-muted);
+  font-size: 12px;
+  padding-left: 8px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 900px) {
+  .app-container { flex-direction: column; }
+  .sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border); }
+  .sidebar-header { padding: 12px 16px; }
+  .nav-group-label { display: none; }
+  .nav-menu { flex-direction: row; flex-wrap: wrap; padding: 6px 12px; }
+  .sidebar-footer { display: none; }
+  .grid-split, .grid-4, .grid-3, .grid-2 { grid-template-columns: 1fr; }
+  .topbar { padding: 0 12px; }
+  .content-area { padding: 14px 12px; }
+}
+</style>
+</head>
+<body>
+<div class="app-container">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-title">
+        <span class="status-dot dot-neutral" id="sidebarDot"></span>
+        Inspection Console
+      </div>
+      <div class="sidebar-subtitle">Computer Vision Subsystem</div>
+    </div>
+
+    <div class="nav-group-label">Modules</div>
+    <nav class="nav-menu" aria-label="System navigation">
+      <button class="nav-btn active" data-view="overview">
+        <span class="nav-icon">[0]</span>
+        <span>Overview</span>
+      </button>
+      <button class="nav-btn" data-view="analysis">
+        <span class="nav-icon">[1]</span>
+        <span>Image Analysis</span>
+      </button>
+      <button class="nav-btn" data-view="dataset">
+        <span class="nav-icon">[2]</span>
+        <span>Dataset Insights</span>
+      </button>
+      <button class="nav-btn" data-view="evaluation">
+        <span class="nav-icon">[3]</span>
+        <span>Model Evaluation</span>
+      </button>
+      <button class="nav-btn" data-view="system">
+        <span class="nav-icon">[4]</span>
+        <span>System Status</span>
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="system-meta-row">
+        <span>Target Host:</span>
+        <strong id="sideTargetHost">127.0.0.1:8000</strong>
+      </div>
+      <div class="system-meta-row">
+        <span>Inference Engine:</span>
+        <strong id="sideModelStatus">Offline</strong>
+      </div>
+      <div class="system-meta-row">
+        <span>Protocol:</span>
+        <strong>HTTP/REST</strong>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Stage -->
+  <main class="main-stage">
+    
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="breadcrumb">
+        Console &nbsp;/&nbsp; <span class="breadcrumb-module" id="breadcrumbCurrent">Overview</span>
+      </div>
+      <div class="topbar-indicators">
+        <span class="badge badge-neutral" id="apiStatusBadge">
+          <span class="status-dot dot-neutral" id="apiDot"></span>
+          API: <span id="apiStatusText">Not Checked</span>
+        </span>
+        <span class="badge badge-pending" id="modelPill">
+          <span class="status-dot dot-pending"></span>
+          Model: Unloaded
+        </span>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <div class="content-area">
+
+      <!-- ==================== VIEW 1: OVERVIEW ==================== -->
+      <section class="view-section active" id="view-overview">
+        <div class="view-header">
+          <div class="view-title-group">
+            <h1>System Overview</h1>
+            <p>Operational status, runtime configuration, and inspection session metrics.</p>
+          </div>
+          <div class="view-actions">
+            <button class="btn btn-secondary" id="refreshOverview">Probe API Connection</button>
+            <button class="btn btn-primary" data-goto="analysis">Launch Image Analysis &rarr;</button>
+          </div>
+        </div>
+
+        <!-- 4 Metric Cards -->
+        <div class="grid grid-4" style="margin-bottom: 14px;">
+          <div class="metric-box">
+            <div class="metric-label">Images Submitted</div>
+            <div class="metric-value" id="statAnalyzed">0</div>
+            <div class="metric-foot">Current browser session</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-label">Dataset Files Inspected</div>
+            <div class="metric-value" id="statFiles">0</div>
+            <div class="metric-foot">Local scans evaluated</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-label">Backend Service</div>
+            <div class="metric-value" id="statApi" style="font-size: 16px;">Not checked</div>
+            <div class="metric-foot" id="statApiFoot">Run connection check</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-label">Model Weights</div>
+            <div class="metric-value" id="statModel" style="font-size: 16px;">Not loaded</div>
+            <div class="metric-foot">best.onnx not detected</div>
+          </div>
+        </div>
+
+        <!-- 2 Column Split: Status Sheet & Actions -->
+        <div class="grid grid-split">
+          <div class="panel">
+            <div class="panel-header">
+              <div>
+                <div class="panel-title">Runtime Environment &amp; Service State</div>
+                <div class="panel-desc">Real-time status of connected backend components.</div>
+              </div>
+              <span class="badge badge-neutral">Live Monitor</span>
+            </div>
+            <div class="panel-body">
+              <div class="spec-list">
+                <div class="spec-item">
+                  <span class="spec-key">
+                    <span class="status-dot dot-neutral" id="rowApiDot"></span>
+                    FastAPI Server Endpoint
+                  </span>
+                  <span class="spec-val" id="overviewApiState">Not tested</span>
+                </div>
+                <div class="spec-item">
+                  <span class="spec-key">
+                    <span class="status-dot dot-pending"></span>
+                    ONNX Inference Weights
+                  </span>
+                  <span class="spec-val">Awaiting model file</span>
+                </div>
+                <div class="spec-item">
+                  <span class="spec-key">
+                    <span class="status-dot dot-pending"></span>
+                    Object Class Definitions
+                  </span>
+                  <span class="spec-val">Awaiting classes.txt</span>
+                </div>
+                <div class="spec-item">
+                  <span class="spec-key">
+                    <span class="status-dot dot-neutral"></span>
+                    Hardware Provider
+                  </span>
+                  <span class="spec-val">CPU (Default Host)</span>
+                </div>
+              </div>
+              <div class="tech-notice">
+                <strong>Subsystem Status:</strong> The HTTP endpoint is operational for multipart file uploads and schema validation. Prediction outputs require trained ONNX weights deployed in the backend model directory.
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title">Direct Module Access</div>
+              <div class="panel-desc">Jump directly to tool modules.</div>
+            </div>
+            <div class="panel-body">
+              <button class="action-panel-btn" data-goto="analysis">
+                <div>
+                  <div class="action-btn-title">Image Analysis</div>
+                  <div class="action-btn-desc">Upload test frames to verify dimension extraction and prediction payload.</div>
+                </div>
+                <span class="action-btn-arrow">&rarr;</span>
+              </button>
+              <button class="action-panel-btn" data-goto="dataset">
+                <div>
+                  <div class="action-btn-title">Dataset Insights</div>
+                  <div class="action-btn-desc">Inspect local folders to audit image/label pairings and YOLO syntax.</div>
+                </div>
+                <span class="action-btn-arrow">&rarr;</span>
+              </button>
+              <button class="action-panel-btn" data-goto="evaluation">
+                <div>
+                  <div class="action-btn-title">Model Evaluation</div>
+                  <div class="action-btn-desc">Benchmark precision, recall, and F1 across label files at IoU 0.50.</div>
+                </div>
+                <span class="action-btn-arrow">&rarr;</span>
+              </button>
+              <button class="action-panel-btn" data-goto="system">
+                <div>
+                  <div class="action-btn-title">System Status</div>
+                  <div class="action-btn-desc">Configure API host URL and probe backend health endpoints.</div>
+                </div>
+                <span class="action-btn-arrow">&rarr;</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Activity Log -->
+        <div class="panel" style="margin-top: 14px;">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title">Session Activity Log</div>
+              <div class="panel-desc">Client-side operations recorded during this session.</div>
+            </div>
+            <button class="btn btn-secondary btn-sm" id="clearActivity">Clear Log</button>
+          </div>
+          <div class="panel-body" id="activityFeed">
+            <div class="empty-cell">No activity logged. Operations performed in this session will appear here.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== VIEW 2: IMAGE ANALYSIS ==================== -->
+      <section class="view-section" id="view-analysis">
+        <div class="view-header">
+          <div class="view-title-group">
+            <h1>Image Analysis &amp; Inference</h1>
+            <p>Upload a test image to validate transmission, dimensions, and endpoint response.</p>
+          </div>
+          <div class="view-actions">
+            <span class="badge badge-pending" id="analysisModelState">
+              <span class="status-dot dot-pending"></span>
+              Inference Engine: Weights Unloaded
+            </span>
+          </div>
+        </div>
+
+        <div class="grid grid-split">
+          <!-- Input Column -->
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title">Input Source</div>
+              <span class="badge badge-neutral">Step 1</span>
+            </div>
+            <div class="panel-body">
+              <input id="imageInput" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+              
+              <div class="dropzone-box" id="imageDrop" role="button" tabindex="0" aria-label="Upload test image">
+                <div class="drop-prompt" id="imageDropInner">
+                  <div class="drop-title">Drop test image here or click to browse</div>
+                  <div class="drop-subtitle">Supported formats: JPG, PNG, WEBP (Max 10 MB)</div>
+                  <span class="drop-badge">Select File</span>
+                </div>
+                <img class="image-preview-frame" id="imagePreview" alt="Input Preview">
+                <div class="image-tag-bar" id="imageOverlay"></div>
+              </div>
+
+              <div class="metadata-grid" id="imageMeta">
+                <div class="meta-field">
+                  <div class="meta-field-label">File Name</div>
+                  <div class="meta-field-val" id="imageName">&mdash;</div>
+                </div>
+                <div class="meta-field">
+                  <div class="meta-field-label">Dimensions</div>
+                  <div class="meta-field-val" id="imageDimensions">&mdash;</div>
+                </div>
+                <div class="meta-field">
+                  <div class="meta-field-label">Size</div>
+                  <div class="meta-field-val" id="imageSize">&mdash;</div>
+                </div>
+              </div>
+
+              <div id="imageMessage" class="tech-notice warn" style="display:none;"></div>
+
+              <div class="control-bar">
+                <button class="btn btn-primary" id="runDetection" style="flex:1;" disabled>Submit for Detection</button>
+                <button class="btn btn-secondary" id="clearImage">Clear</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Output Column -->
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title">Endpoint Response</div>
+              <span class="badge badge-neutral">Step 2</span>
+            </div>
+            <div class="panel-body">
+              <div class="terminal-stage">
+                <div class="terminal-header">
+                  <span id="imageConnection">
+                    <span class="status-dot dot-neutral"></span>
+                    <span id="imageConnectionText">Endpoint ready</span>
+                  </span>
+                  <span>POST /predict</span>
+                </div>
+                <div class="terminal-content">
+                  <div class="terminal-empty" id="analysisEmpty">
+                    <div class="terminal-empty-title">Awaiting Submission</div>
+                    <div class="terminal-empty-text">Select an image file and submit it to the backend to inspect the JSON payload.</div>
+                  </div>
+                  <pre class="terminal-code" id="analysisResponse"></pre>
+                </div>
+              </div>
+
+              <div class="tech-notice warn" style="margin-top: 12px;">
+                <strong>Inference Notice:</strong> The active backend validates file headers and dimensions but returns <code>model_loaded: false</code>. Genuine object bounding boxes will be rendered when the ONNX model is deployed.
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== VIEW 3: DATASET INSIGHTS ==================== -->
+      <section class="view-section" id="view-dataset">
+        <div class="view-header">
+          <div class="view-title-group">
+            <h1>Dataset Insights &amp; Quality Audit</h1>
+            <p>Inspect local directories to verify image/label pairs and validate YOLO coordinate syntax.</p>
+          </div>
+          <div class="view-actions">
+            <button class="btn btn-secondary" id="resetDataset">Reset Scan</button>
+          </div>
+        </div>
+
+        <div class="grid grid-split">
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title">Directory Selection</div>
+              <span class="badge badge-neutral">Local Execution</span>
+            </div>
+            <div class="panel-body">
+              <input id="datasetInput" type="file" webkitdirectory directory multiple hidden>
+              
+              <div class="dropzone-box" style="min-height: 180px;">
+                <div class="drop-prompt">
+                  <div class="drop-title">Select Local Dataset Folder</div>
+                  <div class="drop-subtitle">Scans directory structure locally in browser. No files are uploaded.</div>
+                  <button class="btn btn-secondary" id="chooseDataset" style="margin-top: 10px;">Select Folder</button>
+                  <div class="drop-subtitle" id="datasetSelection" style="margin-top: 8px;">No folder selected</div>
+                </div>
+              </div>
+
+              <div class="tech-notice" style="margin-top: 12px;">
+                <strong>Expected Folder Structure:</strong> Folders containing <code>images/</code>, <code>yolo_labels/</code>, <code>id_masks/</code>, or <code>mapping/</code> (e.g. <code>data/synthetic</code> or <code>data/real_test</code>).
+              </div>
+              <div id="datasetMessage" class="tech-notice warn" style="display:none; margin-top: 10px;"></div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title">Audit Summary</div>
+              <span class="badge badge-neutral" id="datasetStatusPill">Not Scanned</span>
+            </div>
+            <div class="panel-body">
+              <div class="spec-list">
+                <div class="spec-item">
+                  <span class="spec-key">Total Files Discovered</span>
+                  <span class="spec-val" id="dsTotal">&mdash;</span>
+                </div>
+                <div class="spec-item">
+                  <span class="spec-key">Supported Image Files</span>
+                  <span class="spec-val" id="dsImages">&mdash;</span>
+                </div>
+                <div class="spec-item">
+                  <span class="spec-key">YOLO Annotation Files (.txt)</span>
+                  <span class="spec-val" id="dsLabels">&mdash;</span>
+                </div>
+                <div class="spec-item">
+                  <span class="spec-key">Segmentation Mask Images</span>
+                  <span class="spec-val" id="dsMasks">&mdash;</span>
+                </div>
+                <div class="spec-item">
+                  <span class="spec-key">Class &amp; Mapping Files</span>
+                  <span class="spec-val" id="dsMappings">&mdash;</span>
+                </div>
+                <div class="spec-item">
+                  <span class="spec-key">Image/Label Stem Matches</span>
+                  <span class="spec-val" id="dsPairs">&mdash;</span>
+                </div>
+                <div class="spec-item">
+                  <span class="spec-key">YOLO Syntax Errors</span>
+                  <span class="spec-val" id="dsErrors">&mdash;</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-top: 14px;">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title">Detailed Validation Findings</div>
+              <div class="panel-desc">Syntax verification and file association checklist.</div>
+            </div>
+            <span class="badge badge-neutral" id="dsFindingCount">0 Findings</span>
+          </div>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th style="width: 25%;">Validation Check</th>
+                  <th style="width: 15%;">Result</th>
+                  <th>Details</th>
+                </tr>
+              </thead>
+              <tbody id="datasetFindings">
+                <tr>
+                  <td colspan="3" class="empty-cell">Select a dataset directory to execute validation checks.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== VIEW 4: MODEL EVALUATION ==================== -->
+      <section class="view-section" id="view-evaluation">
+        <div class="view-header">
+          <div class="view-title-group">
+            <h1>Model Evaluation</h1>
+            <p>Compute precision, recall, and F1 metrics by matching ground-truth and prediction YOLO labels.</p>
+          </div>
+          <div class="view-actions">
+            <span class="badge badge-neutral">IoU &ge; 0.50 Standard</span>
+          </div>
+        </div>
+
+        <div class="tech-notice" style="margin-bottom: 14px;">
+          <strong>Evaluation Standard:</strong> Parses normalized coordinates <code>class_id x_center y_center width height</code> (0.0 to 1.0). Matches identical classes with intersection-over-union (IoU) &ge; 0.50. Operates on user-provided label files.
+        </div>
+
+        <div class="grid grid-2">
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title">Ground-Truth Reference Labels</div>
+              <span class="badge badge-neutral">Reference</span>
+            </div>
+            <div class="panel-body">
+              <input id="gtInput" type="file" accept=".txt,text/plain" multiple hidden>
+              <div class="dropzone-box" style="min-height: 120px;">
+                <div class="drop-prompt">
+                  <div class="drop-title">Select Ground-Truth TXT Files</div>
+                  <div class="drop-subtitle" id="gtCount">No reference files selected</div>
+                  <button class="btn btn-secondary btn-sm" id="chooseGT" style="margin-top: 8px;">Select Files</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title">Predicted Labels</div>
+              <span class="badge badge-neutral">Predictions</span>
+            </div>
+            <div class="panel-body">
+              <input id="predInput" type="file" accept=".txt,text/plain" multiple hidden>
+              <div class="dropzone-box" style="min-height: 120px;">
+                <div class="drop-prompt">
+                  <div class="drop-title">Select Prediction TXT Files</div>
+                  <div class="drop-subtitle" id="predCount">No prediction files selected</div>
+                  <button class="btn btn-secondary btn-sm" id="choosePred" style="margin-top: 8px;">Select Files</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 8px; margin-top: 14px;">
+          <button class="btn btn-primary" id="evaluateBtn">Calculate Metrics</button>
+          <button class="btn btn-secondary" id="resetEval">Reset</button>
+        </div>
+
+        <div id="evalMessage" class="tech-notice warn" style="display:none; margin-top: 12px;"></div>
+
+        <!-- Metric Scoreboard -->
+        <div class="panel" style="margin-top: 14px;">
+          <div class="panel-header">
+            <div>
+              <div class="panel-title">Evaluation Metrics</div>
+              <div class="panel-desc" id="evalSubtitle">Select both ground-truth and prediction sets to compute metrics.</div>
+            </div>
+            <span class="badge badge-neutral" id="evalPill">Not Run</span>
+          </div>
+          <div class="panel-body">
+            <div class="grid grid-3" style="margin-bottom: 14px;">
+              <div class="metric-box">
+                <div class="metric-label">Precision</div>
+                <div class="metric-value" id="metricPrecision">&mdash;</div>
+                <div class="metric-foot">TP / (TP + FP)</div>
+              </div>
+              <div class="metric-box">
+                <div class="metric-label">Recall</div>
+                <div class="metric-value" id="metricRecall">&mdash;</div>
+                <div class="metric-foot">TP / (TP + FN)</div>
+              </div>
+              <div class="metric-box">
+                <div class="metric-label">F1 Score</div>
+                <div class="metric-value" id="metricF1">&mdash;</div>
+                <div class="metric-foot">2 &times; (P &times; R) / (P + R)</div>
+              </div>
+            </div>
+
+            <div class="grid grid-4" style="margin-bottom: 14px;">
+              <div class="metric-box">
+                <div class="metric-label">True Positives (TP)</div>
+                <div class="metric-value" id="evalTP">&mdash;</div>
+              </div>
+              <div class="metric-box">
+                <div class="metric-label">False Positives (FP)</div>
+                <div class="metric-value" id="evalFP">&mdash;</div>
+              </div>
+              <div class="metric-box">
+                <div class="metric-label">False Negatives (FN)</div>
+                <div class="metric-value" id="evalFN">&mdash;</div>
+              </div>
+              <div class="metric-box">
+                <div class="metric-label">Matched Stem Pairs</div>
+                <div class="metric-value" id="evalPairs">&mdash;</div>
+              </div>
+            </div>
+
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Sample Stem</th>
+                    <th>GT Boxes</th>
+                    <th>Pred Boxes</th>
+                    <th>TP</th>
+                    <th>FP</th>
+                    <th>FN</th>
+                  </tr>
+                </thead>
+                <tbody id="evalRows">
+                  <tr>
+                    <td colspan="6" class="empty-cell">No evaluation executed.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== VIEW 5: SYSTEM STATUS ==================== -->
+      <section class="view-section" id="view-system">
+        <div class="view-header">
+          <div class="view-title-group">
+            <h1>System Status &amp; Configuration</h1>
+            <p>Verify connectivity to the FastAPI backend service and review pipeline requirements.</p>
+          </div>
+          <div class="view-actions">
+            <button class="btn btn-primary" id="checkHealth">Check Connection</button>
+          </div>
+        </div>
+
+        <div class="grid grid-split">
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title">API Connection Configuration</div>
+              <span class="badge badge-neutral" id="healthPill">Not Checked</span>
+            </div>
+            <div class="panel-body">
+              <div class="form-group">
+                <label class="form-label" for="apiBase">Backend API Base URL</label>
+                <input class="form-input" id="apiBase" type="url" value="http://127.0.0.1:8000" placeholder="http://127.0.0.1:8000">
+                <div class="form-hint">Default local development address for the FastAPI backend process.</div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Health Check Endpoint</label>
+                <input class="form-input" value="GET /health" readonly>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Inference Endpoint</label>
+                <input class="form-input" value="POST /predict (Multipart form field: file)" readonly>
+              </div>
+              <div id="healthMessage" class="tech-notice">
+                Connection has not been tested in this session. Click &ldquo;Check Connection&rdquo; to probe the service.
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title">Pipeline Integration Status</div>
+              <span class="badge badge-neutral">Component Audit</span>
+            </div>
+            <div class="panel-body">
+              <div class="spec-list">
+                <div class="spec-item">
+                  <span class="spec-key">
+                    <span class="status-dot dot-ready"></span>
+                    FastAPI Service Module
+                  </span>
+                  <span class="spec-val" style="color:var(--green)">Implemented</span>
+                </div>
+                <div class="spec-item">
+                  <span class="spec-key">
+                    <span class="status-dot dot-ready"></span>
+                    CORS Middleware
+                  </span>
+                  <span class="spec-val" style="color:var(--green)">Active</span>
+                </div>
+                <div class="spec-item">
+                  <span class="spec-key">
+                    <span class="status-dot dot-pending"></span>
+                    ONNX Weights (`best.onnx`)
+                  </span>
+                  <span class="spec-val" style="color:var(--amber)">Awaiting File</span>
+                </div>
+                <div class="spec-item">
+                  <span class="spec-key">
+                    <span class="status-dot dot-pending"></span>
+                    Class Labels (`classes.txt`)
+                  </span>
+                  <span class="spec-val" style="color:var(--amber)">Awaiting File</span>
+                </div>
+                <div class="spec-item">
+                  <span class="spec-key">
+                    <span class="status-dot dot-neutral"></span>
+                    Inference Runtime Execution
+                  </span>
+                  <span class="spec-val">CPU Standby</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-top: 14px;">
+          <div class="panel-header">
+            <div class="panel-title">Technical Runtime Notes</div>
+          </div>
+          <div class="panel-body">
+            <div class="tech-notice">
+              <strong>Health Probe Clarification:</strong> A <code>200 OK</code> response from <code>/health</code> confirms that the HTTP server is responsive and accepting network requests. It does not indicate that model weights are loaded or that detection inferences are being produced. If opening this HTML file directly from disk via <code>file://</code>, ensure the backend CORS configuration allows all origins or host this file using a local static file server.
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const appState = {
+  view: 'overview',
+  analyzed: 0,
+  filesInspected: 0,
+  apiStatus: 'Not checked',
+  activity: [],
+  datasetFiles: [],
+  gtFiles: [],
+  predFiles: []
+};
+
+const viewNames = {
+  overview: 'Overview',
+  analysis: 'Image Analysis',
+  dataset: 'Dataset Insights',
+  evaluation: 'Model Evaluation',
+  system: 'System Status'
+};
+
+function logActivity(title, detail) {
+  appState.activity.unshift({
+    title,
+    detail,
+    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+  });
+  appState.activity = appState.activity.slice(0, 10);
+  renderActivity();
+}
+
+function renderActivity() {
+  const feed = $('activityFeed');
+  if (!appState.activity.length) {
+    feed.innerHTML = '<div class="empty-cell">No activity logged. Operations performed in this session will appear here.</div>';
+    return;
+  }
+  feed.innerHTML = appState.activity.map(a => `
+    <div class="activity-row">
+      <div>
+        <div class="activity-title">${escapeHTML(a.title)}</div>
+        <div class="activity-sub">${escapeHTML(a.detail)}</div>
+      </div>
+      <div class="activity-time">${escapeHTML(a.time)}</div>
+    </div>
+  `).join('');
+}
+
+function escapeHTML(v) {
+  return String(v ?? '').replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
+}
+
+function goTo(name) {
+  if (!viewNames[name]) return;
+  appState.view = name;
+  document.querySelectorAll('.view-section').forEach(v => {
+    v.classList.toggle('active', v.id === 'view-' + name);
+  });
+  document.querySelectorAll('.nav-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.view === name);
+  });
+  $('breadcrumbCurrent').textContent = viewNames[name];
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+document.querySelectorAll('[data-view]').forEach(b => {
+  b.addEventListener('click', () => goTo(b.dataset.view));
+});
+
+document.querySelectorAll('[data-goto]').forEach(b => {
+  b.addEventListener('click', () => goTo(b.dataset.goto));
+});
+
+$('clearActivity').addEventListener('click', () => {
+  appState.activity = [];
+  renderActivity();
+});
+
+function setApiStatus(status, detail) {
+  appState.apiStatus = status;
+  $('statApi').textContent = status;
+  $('statApiFoot').textContent = detail;
+  $('overviewApiState').textContent = status;
+  
+  const isOk = status === 'Connected';
+  const isErr = status === 'Error' || status === 'Unreachable';
+  
+  $('apiStatusText').textContent = status;
+  $('apiStatusBadge').className = 'badge ' + (isOk ? 'badge-ready' : isErr ? 'badge-alert' : 'badge-neutral');
+  $('apiDot').className = 'status-dot ' + (isOk ? 'dot-ready' : isErr ? 'dot-alert' : 'dot-neutral');
+  $('sidebarDot').className = 'status-dot ' + (isOk ? 'dot-ready' : isErr ? 'dot-alert' : 'dot-neutral');
+  $('rowApiDot').className = 'status-dot ' + (isOk ? 'dot-ready' : isErr ? 'dot-alert' : 'dot-neutral');
+}
+
+async function checkHealth() {
+  const base = $('apiBase').value.trim().replace(/\/+$/, '') || 'http://127.0.0.1:8000';
+  $('sideTargetHost').textContent = base.replace(/^https?:\/\//, '');
+  const msg = $('healthMessage');
+  $('healthPill').className = 'badge badge-neutral';
+  $('healthPill').textContent = 'CHECKING...';
+  msg.className = 'tech-notice';
+  msg.textContent = 'Transmitting probe to ' + base + '/health ...';
+
+  try {
+    const r = await fetch(base + '/health', { method: 'GET' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    let data;
+    try {
+      data = await r.json();
+    } catch {
+      data = { response: 'Non-JSON response received' };
+    }
+    setApiStatus('Connected', 'Health endpoint responded 200 OK');
+    $('healthPill').className = 'badge badge-ready';
+    $('healthPill').textContent = 'CONNECTED';
+    msg.className = 'tech-notice success';
+    msg.textContent = 'Backend connection verified: ' + JSON.stringify(data);
+    logActivity('Health Check Succeeded', base + '/health responded 200 OK');
+    return data;
+  } catch (e) {
+    setApiStatus('Unreachable', 'Failed to reach backend endpoint');
+    $('healthPill').className = 'badge badge-alert';
+    $('healthPill').textContent = 'UNREACHABLE';
+    msg.className = 'tech-notice error';
+    msg.textContent = 'Connection failed: ' + e.message + '. Verify that the FastAPI uvicorn server is running at ' + base + ' and permits CORS.';
+    logActivity('Health Check Failed', e.message);
+    throw e;
+  }
+}
+
+$('checkHealth').addEventListener('click', () => checkHealth().catch(() => {}));
+$('refreshOverview').addEventListener('click', () => {
+  checkHealth().catch(() => {});
+});
+
+function updateStats() {
+  $('statAnalyzed').textContent = appState.analyzed;
+  $('statFiles').textContent = appState.filesInspected;
+  $('statApi').textContent = appState.apiStatus;
+}
+
+// Image Analysis Module
+let selectedImage = null;
+
+function showImageMsg(msg, isError = false) {
+  const m = $('imageMessage');
+  m.style.display = 'block';
+  m.className = 'tech-notice ' + (isError ? 'error' : 'warn');
+  m.textContent = msg;
+}
+
+function clearImageMsg() {
+  $('imageMessage').style.display = 'none';
+  $('imageMessage').textContent = '';
+}
+
+function chooseImage(file) {
+  clearImageMsg();
+  if (!file) return;
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+    showImageMsg('Unsupported file format. Please upload JPG, PNG, or WEBP.', true);
+    return;
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    showImageMsg('Image exceeds 10 MB file size limit.', true);
+    return;
+  }
+
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = () => {
+    selectedImage = file;
+    $('imagePreview').src = url;
+    $('imagePreview').style.display = 'block';
+    $('imageDropInner').style.display = 'none';
+    $('imageOverlay').style.display = 'block';
+    $('imageOverlay').textContent = file.name;
+    $('imageMeta').style.display = 'grid';
+    $('imageName').textContent = file.name;
+    $('imageDimensions').textContent = img.naturalWidth + ' \u00D7 ' + img.naturalHeight + ' px';
+    $('imageSize').textContent = (file.size / 1024).toFixed(1) + ' KB';
+    $('runDetection').disabled = false;
+    $('analysisEmpty').style.display = 'block';
+    $('analysisResponse').style.display = 'none';
+    $('imageConnectionText').textContent = 'Image loaded - Ready for transmission';
+    $('imageConnection').querySelector('.status-dot').className = 'status-dot dot-neutral';
+  };
+  img.onerror = () => showImageMsg('Failed to decode image data.', true);
+  img.src = url;
+}
+
+$('imageDrop').addEventListener('click', () => $('imageInput').click());
+$('imageDrop').addEventListener('keydown', e => {
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    $('imageInput').click();
+  }
+});
+$('imageInput').addEventListener('change', e => chooseImage(e.target.files[0]));
+
+$('imageDrop').addEventListener('dragover', e => {
+  e.preventDefault();
+  $('imageDrop').classList.add('drag');
+});
+$('imageDrop').addEventListener('dragleave', () => $('imageDrop').classList.remove('drag'));
+$('imageDrop').addEventListener('drop', e => {
+  e.preventDefault();
+  $('imageDrop').classList.remove('drag');
+  chooseImage(e.dataTransfer.files[0]);
+});
+
+$('clearImage').addEventListener('click', () => {
+  selectedImage = null;
+  $('imageInput').value = '';
+  $('imagePreview').removeAttribute('src');
+  $('imagePreview').style.display = 'none';
+  $('imageDropInner').style.display = 'block';
+  $('imageOverlay').style.display = 'none';
+  $('imageMeta').style.display = 'none';
+  $('runDetection').disabled = true;
+  clearImageMsg();
+  $('analysisEmpty').style.display = 'block';
+  $('analysisResponse').style.display = 'none';
+  $('imageConnectionText').textContent = 'Endpoint ready';
+  $('imageConnection').querySelector('.status-dot').className = 'status-dot dot-neutral';
+});
+
+$('runDetection').addEventListener('click', async () => {
+  if (!selectedImage) return;
+  const base = $('apiBase').value.trim().replace(/\/+$/, '') || 'http://127.0.0.1:8000';
+  const btn = $('runDetection');
+  btn.disabled = true;
+  btn.textContent = 'Transmitting...';
+  clearImageMsg();
+
+  try {
+    const fd = new FormData();
+    fd.append('file', selectedImage);
+    const r = await fetch(base + '/predict', { method: 'POST', body: fd });
+    let data;
+    try {
+      data = await r.json();
+    } catch {
+      throw new Error('Unable to parse server response as JSON');
+    }
+    if (!r.ok) throw new Error(data.detail || 'HTTP ' + r.status);
+
+    $('analysisEmpty').style.display = 'none';
+    $('analysisResponse').style.display = 'block';
+    $('analysisResponse').textContent = JSON.stringify(data, null, 2);
+    
+    $('imageConnectionText').textContent = data.model_loaded ? 'Inference completed' : 'Payload received (Model weights unloaded)';
+    $('imageConnection').querySelector('.status-dot').className = 'status-dot ' + (data.model_loaded ? 'dot-ready' : 'dot-pending');
+    
+    appState.analyzed++;
+    updateStats();
+    setApiStatus('Connected', 'Prediction endpoint responded 200 OK');
+    logActivity('Image Submitted to Backend', selectedImage.name + ' (' + data.width + '\u00D7' + data.height + ')');
+    
+    if (!data.model_loaded) {
+      showImageMsg('Upload verified successfully. Note: Backend model_loaded is false; object bounding boxes are pending ONNX model integration.');
+    }
+  } catch (e) {
+    $('analysisEmpty').style.display = 'none';
+    $('analysisResponse').style.display = 'block';
+    $('analysisResponse').textContent = 'Transmission Error:\n' + e.message;
+    $('imageConnectionText').textContent = 'Transmission failed';
+    $('imageConnection').querySelector('.status-dot').className = 'status-dot dot-alert';
+    showImageMsg('Network request failed. Verify that the FastAPI backend is running and permits CORS.', true);
+    setApiStatus('Error', 'Image request failed');
+    logActivity('Image Submission Failed', e.message);
+  } finally {
+    btn.disabled = !selectedImage;
+    btn.textContent = 'Submit for Detection';
+  }
+});
+
+// Dataset Insights Module
+const IMAGE_EXT = ['.png', '.jpg', '.jpeg', '.webp', '.bmp', '.tif', '.tiff'];
+function ext(name) {
+  const i = name.lastIndexOf('.');
+  return i < 0 ? '' : name.slice(i).toLowerCase();
+}
+function basename(path) {
+  const clean = path.replace(/\\/g, '/').split('/').pop() || path;
+  const i = clean.lastIndexOf('.');
+  return i > 0 ? clean.slice(0, i) : clean;
+}
+
+function addFinding(rows, check, status, detail) {
+  rows.push({ check, status, detail });
+}
+
+function renderFindings(rows) {
+  $('datasetFindings').innerHTML = rows.length ? rows.map(x => `
+    <tr>
+      <td style="font-weight:600;">${escapeHTML(x.check)}</td>
+      <td>
+        <span class="badge ${x.status === 'PASS' ? 'badge-ready' : x.status === 'WARN' ? 'badge-pending' : 'badge-alert'}">
+          ${escapeHTML(x.status)}
+        </span>
+      </td>
+      <td>${escapeHTML(x.detail)}</td>
+    </tr>
+  `).join('') : '<tr><td colspan="3" class="empty-cell">No findings recorded.</td></tr>';
+  $('dsFindingCount').textContent = rows.length + ' Findings';
+}
+
+$('chooseDataset').addEventListener('click', () => $('datasetInput').click());
+
+$('datasetInput').addEventListener('change', async e => {
+  const files = Array.from(e.target.files || []);
+  if (!files.length) return;
+  appState.datasetFiles = files;
+  
+  const rootName = (files[0].webkitRelativePath || files[0].name).split('/')[0];
+  $('datasetSelection').textContent = files.length + ' file(s) selected from ' + rootName;
+  $('datasetStatusPill').className = 'badge badge-neutral';
+  $('datasetStatusPill').textContent = 'AUDITING...';
+  $('datasetMessage').style.display = 'none';
+
+  const images = files.filter(f => IMAGE_EXT.includes(ext(f.name)));
+  const labels = files.filter(f => ext(f.name) === '.txt');
+  const masks = files.filter(f => {
+    const p = (f.webkitRelativePath || f.name).toLowerCase();
+    return IMAGE_EXT.includes(ext(f.name)) && (p.includes('mask') || p.includes('id_mask'));
+  });
+  const mappings = files.filter(f => {
+    const p = (f.webkitRelativePath || f.name).toLowerCase();
+    return p.includes('mapping') || p.endsWith('classes.txt') || p.endsWith('class_names.txt');
+  });
+
+  const imageStems = new Set(images.map(f => basename(f.webkitRelativePath || f.name).toLowerCase()));
+  const labelStems = new Set(labels.filter(f => {
+    const p = (f.webkitRelativePath || f.name).toLowerCase();
+    return p.includes('label') || p.endsWith('.txt');
+  }).map(f => basename(f.webkitRelativePath || f.name).toLowerCase()));
+
+  const matches = [...imageStems].filter(s => labelStems.has(s)).length;
+  let labelErrors = 0, emptyLabels = 0;
+  const examples = [];
+
+  for (const f of labels.slice(0, 500)) {
+    const rel = (f.webkitRelativePath || f.name).toLowerCase();
+    if (!(rel.includes('label') || rel.endsWith('.txt'))) continue;
+    let text;
+    try {
+      text = await f.text();
+    } catch {
+      labelErrors++;
+      if (examples.length < 5) examples.push(f.name + ': read error');
+      continue;
+    }
+    const lines = text.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+    if (!lines.length) {
+      emptyLabels++;
+      continue;
+    }
+    for (let i = 0; i < lines.length; i++) {
+      const cols = lines[i].split(/\s+/);
+      if (cols.length !== 5) {
+        labelErrors++;
+        if (examples.length < 5) examples.push(f.name + ' L' + (i + 1) + ': expected 5 values');
+        continue;
+      }
+      const nums = cols.map(Number);
+      if (nums.some(n => !Number.isFinite(n)) || !Number.isInteger(nums[0]) || nums[0] < 0 || nums.slice(1).some(n => n < 0 || n > 1) || nums[3] <= 0 || nums[4] <= 0) {
+        labelErrors++;
+        if (examples.length < 5) examples.push(f.name + ' L' + (i + 1) + ': invalid coordinates or class');
+      }
+    }
+  }
+
+  $('dsTotal').textContent = files.length;
+  $('dsImages').textContent = images.length;
+  $('dsLabels').textContent = labels.length;
+  $('dsMasks').textContent = masks.length;
+  $('dsMappings').textContent = mappings.length;
+  $('dsPairs').textContent = matches;
+  $('dsErrors').textContent = labelErrors;
+
+  $('datasetStatusPill').className = 'badge ' + (labelErrors ? 'badge-pending' : 'badge-ready');
+  $('datasetStatusPill').textContent = labelErrors ? 'Audit Complete: Issues Found' : 'Audit Complete: Normal';
+
+  appState.filesInspected = files.length;
+  updateStats();
+  logActivity('Dataset Audit Completed', files.length + ' files scanned (' + images.length + ' images, ' + labelErrors + ' syntax errors)');
+
+  let rows = [];
+  addFinding(rows, 'Directory Scan', 'PASS', files.length + ' files enumerated locally in browser.');
+  addFinding(rows, 'Image File Availability', images.length ? 'PASS' : 'WARN', images.length + ' supported image files detected.');
+  addFinding(rows, 'YOLO Label Availability', labels.length ? 'PASS' : 'WARN', labels.length + ' .txt files identified.');
+  addFinding(rows, 'Image/Label Stem Alignment', matches === images.length && images.length > 0 ? 'PASS' : matches > 0 ? 'WARN' : 'WARN', matches + ' image stems align with label stems.');
+  addFinding(rows, 'YOLO Coordinate Syntax', labelErrors ? 'WARN' : 'PASS', labelErrors + ' malformed rows detected across tested files.');
+  if (emptyLabels) addFinding(rows, 'Empty Annotation Files', 'WARN', emptyLabels + ' empty text files detected (valid for zero-object images).');
+  if (masks.length) addFinding(rows, 'Segmentation Masks', 'PASS', masks.length + ' mask images detected by path.');
+  if (mappings.length) addFinding(rows, 'Class Mappings', 'PASS', mappings.length + ' mapping/class definition files located.');
+  if (examples.length) addFinding(rows, 'Sample Syntax Warnings', 'WARN', examples.join('; '));
+  renderFindings(rows);
+});
+
+$('resetDataset').addEventListener('click', () => {
+  $('datasetInput').value = '';
+  appState.datasetFiles = [];
+  $('datasetSelection').textContent = 'No folder selected';
+  ['dsTotal', 'dsImages', 'dsLabels', 'dsMasks', 'dsMappings', 'dsPairs', 'dsErrors'].forEach(id => $(id).textContent = '\u2014');
+  $('datasetStatusPill').className = 'badge badge-neutral';
+  $('datasetStatusPill').textContent = 'Not Scanned';
+  $('dsFindingCount').textContent = '0 Findings';
+  $('datasetFindings').innerHTML = '<tr><td colspan="3" class="empty-cell">Select a dataset directory to execute validation checks.</td></tr>';
+});
+
+// Model Evaluation Module
+$('chooseGT').addEventListener('click', () => $('gtInput').click());
+$('choosePred').addEventListener('click', () => $('predInput').click());
+
+$('gtInput').addEventListener('change', e => {
+  appState.gtFiles = Array.from(e.target.files || []);
+  $('gtCount').textContent = appState.gtFiles.length + ' reference file(s) selected';
+  $('evalMessage').style.display = 'none';
+});
+
+$('predInput').addEventListener('change', e => {
+  appState.predFiles = Array.from(e.target.files || []);
+  $('predCount').textContent = appState.predFiles.length + ' prediction file(s) selected';
+  $('evalMessage').style.display = 'none';
+});
+
+function parseYolo(text, fileName) {
+  const boxes = [], errors = [];
+  const lines = text.split(/\r?\n/);
+  for (let idx = 0; idx < lines.length; idx++) {
+    const line = lines[idx].trim();
+    if (!line) continue;
+    const vals = line.split(/\s+/);
+    if (vals.length !== 5) {
+      errors.push(fileName + ' L' + (idx + 1) + ': expected 5 values');
+      continue;
+    }
+    const v = vals.map(Number);
+    if (v.some(n => !Number.isFinite(n)) || !Number.isInteger(v[0]) || v[0] < 0 || v.slice(1).some(n => n < 0 || n > 1) || v[3] <= 0 || v[4] <= 0) {
+      errors.push(fileName + ' L' + (idx + 1) + ': invalid values');
+      continue;
+    }
+    boxes.push({ c: v[0], x: v[1], y: v[2], w: v[3], h: v[4] });
+  }
+  return { boxes, errors };
+}
+
+function iou(a, b) {
+  const ax1 = a.x - a.w / 2, ay1 = a.y - a.h / 2, ax2 = a.x + a.w / 2, ay2 = a.y + a.h / 2;
+  const bx1 = b.x - b.w / 2, by1 = b.y - b.h / 2, bx2 = b.x + b.w / 2, by2 = b.y + b.h / 2;
+  const iw = Math.max(0, Math.min(ax2, bx2) - Math.max(ax1, bx1));
+  const ih = Math.max(0, Math.min(ay2, by2) - Math.max(ay1, by1));
+  const inter = iw * ih;
+  const union = a.w * a.h + b.w * b.h - inter;
+  return union > 0 ? inter / union : 0;
+}
+
+async function fileLabelMap(files) {
+  const map = new Map(), errors = [];
+  for (const f of files) {
+    const stem = basename(f.name).toLowerCase();
+    let txt;
+    try {
+      txt = await f.text();
+    } catch {
+      errors.push(f.name + ': read error');
+      continue;
+    }
+    const parsed = parseYolo(txt, f.name);
+    errors.push(...parsed.errors);
+    if (map.has(stem)) {
+      errors.push('Duplicate stem identified: ' + stem);
+      continue;
+    }
+    map.set(stem, parsed.boxes);
+  }
+  return { map, errors };
+}
+
+function matchBoxes(gt, pred) {
+  const candidate = [];
+  for (let i = 0; i < gt.length; i++) {
+    for (let j = 0; j < pred.length; j++) {
+      if (gt[i].c === pred[j].c) {
+        const overlap = iou(gt[i], pred[j]);
+        if (overlap >= 0.50) candidate.push({ i, j, overlap });
+      }
+    }
+  }
+  candidate.sort((a, b) => b.overlap - a.overlap);
+  const usedG = new Set(), usedP = new Set();
+  for (const m of candidate) {
+    if (!usedG.has(m.i) && !usedP.has(m.j)) {
+      usedG.add(m.i);
+      usedP.add(m.j);
+    }
+  }
+  return {
+    tp: usedG.size,
+    fp: pred.length - usedP.size,
+    fn: gt.length - usedG.size
+  };
+}
+
+$('evaluateBtn').addEventListener('click', async () => {
+  const msg = $('evalMessage');
+  msg.style.display = 'none';
+
+  if (!appState.gtFiles.length || !appState.predFiles.length) {
+    msg.className = 'tech-notice warn';
+    msg.textContent = 'Please choose at least one reference file and one prediction file.';
+    msg.style.display = 'block';
+    return;
+  }
+
+  const gt = await fileLabelMap(appState.gtFiles);
+  const pred = await fileLabelMap(appState.predFiles);
+  const errors = [...gt.errors, ...pred.errors];
+
+  if (errors.length) {
+    msg.className = 'tech-notice error';
+    msg.textContent = 'Label parsing error: ' + errors.slice(0, 5).join('; ') + (errors.length > 5 ? ' (+' + (errors.length - 5) + ' more)' : '');
+    msg.style.display = 'block';
+    return;
+  }
+
+  const stems = new Set([...gt.map.keys(), ...pred.map.keys()]);
+  let TP = 0, FP = 0, FN = 0, pairs = 0, rows = [];
+
+  for (const stem of [...stems].sort()) {
+    const g = gt.map.get(stem) || [];
+    const p = pred.map.get(stem) || [];
+    if (gt.map.has(stem) && pred.map.has(stem)) pairs++;
+    const m = matchBoxes(g, p);
+    TP += m.tp;
+    FP += m.fp;
+    FN += m.fn;
+    rows.push({ stem, g: g.length, p: p.length, ...m });
+  }
+
+  const precision = (TP + FP) ? TP / (TP + FP) : 0;
+  const recall = (TP + FN) ? TP / (TP + FN) : 0;
+  const f1 = (precision + recall) ? (2 * precision * recall) / (precision + recall) : 0;
+
+  $('metricPrecision').textContent = (precision * 100).toFixed(1) + '%';
+  $('metricRecall').textContent = (recall * 100).toFixed(1) + '%';
+  $('metricF1').textContent = (f1 * 100).toFixed(1) + '%';
+
+  $('evalTP').textContent = TP;
+  $('evalFP').textContent = FP;
+  $('evalFN').textContent = FN;
+  $('evalPairs').textContent = pairs;
+
+  $('evalSubtitle').textContent = 'IoU \u2265 0.50 \u00B7 Same-class matching \u00B7 ' + stems.size + ' sample stems evaluated';
+  $('evalPill').className = 'badge badge-ready';
+  $('evalPill').textContent = 'Evaluation Complete';
+
+  $('evalRows').innerHTML = rows.map(r => `
+    <tr>
+      <td class="mono">${escapeHTML(r.stem + '.txt')}</td>
+      <td class="mono">${r.g}</td>
+      <td class="mono">${r.p}</td>
+      <td class="mono" style="color:var(--green);font-weight:600;">${r.tp}</td>
+      <td class="mono" style="color:var(--red);">${r.fp}</td>
+      <td class="mono" style="color:var(--amber);">${r.fn}</td>
+    </tr>
+  `).join('') || '<tr><td colspan="6" class="empty-cell">No label rows evaluated.</td></tr>';
+
+  if (gt.map.size !== pred.map.size || [...gt.map.keys()].some(k => !pred.map.has(k))) {
+    msg.className = 'tech-notice warn';
+    msg.textContent = 'Note: Discrepancy in file stems between reference and prediction sets. Unmatched files are evaluated as empty annotations.';
+    msg.style.display = 'block';
+  }
+
+  logActivity('Model Evaluation Run', 'P: ' + (precision * 100).toFixed(1) + '% | R: ' + (recall * 100).toFixed(1) + '% | F1: ' + (f1 * 100).toFixed(1) + '%');
+});
+
+$('resetEval').addEventListener('click', () => {
+  appState.gtFiles = [];
+  appState.predFiles = [];
+  $('gtInput').value = '';
+  $('predInput').value = '';
+  $('gtCount').textContent = 'No reference files selected';
+  $('predCount').textContent = 'No prediction files selected';
+  ['metricPrecision', 'metricRecall', 'metricF1', 'evalTP', 'evalFP', 'evalFN', 'evalPairs'].forEach(id => $(id).textContent = '\u2014');
+  $('evalRows').innerHTML = '<tr><td colspan="6" class="empty-cell">No evaluation executed.</td></tr>';
+  $('evalSubtitle').textContent = 'Select both ground-truth and prediction sets to compute metrics.';
+  $('evalPill').className = 'badge badge-neutral';
+  $('evalPill').textContent = 'Not Run';
+  $('evalMessage').style.display = 'none';
+});
+
+// Initialization
+setApiStatus('Not checked', 'Run connection check to verify');
+renderActivity();
+</script>
+</body>
+</html>
