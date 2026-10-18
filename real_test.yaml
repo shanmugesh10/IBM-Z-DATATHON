@@ -1,0 +1,6 @@
+
+path: S:/cad-synth/real_test
+train: images
+val: images
+names:
+  0: part1
