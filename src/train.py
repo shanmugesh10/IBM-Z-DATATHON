@@ -15,7 +15,7 @@ model.train(
     imgsz=640,
     batch=16,
     device=0,
-    workers=4,
+    workers=0,
     seed=42,
     project="runs",
     name="synth_v1"

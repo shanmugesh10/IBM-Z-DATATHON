@@ -1018,10 +1018,12 @@ table.data-table tr:hover td { background: #f8fcfa; }
           <span class="status-dot dot-neutral" id="apiDot"></span>
           API: <span id="apiStatusText">Not Checked</span>
         </span>
+        
         <span class="badge badge-pending" id="modelPill">
-          <span class="status-dot dot-pending"></span>
-          Model: Unloaded
+        <span class="status-dot dot-pending" id="modelDot"></span>
+            Model: <span id="modelStatusText">Checking...</span>
         </span>
+
       </div>
     </header>
 
@@ -1061,7 +1063,7 @@ table.data-table tr:hover td { background: #f8fcfa; }
           <div class="metric-box">
             <div class="metric-label">Model Weights</div>
             <div class="metric-value" id="statModel" style="font-size: 16px;">Not loaded</div>
-            <div class="metric-foot">best.onnx not detected</div>
+            <div class="metric-foot">yolov8n.pt loaded</div>
           </div>
         </div>
 
@@ -1087,9 +1089,9 @@ table.data-table tr:hover td { background: #f8fcfa; }
                 <div class="spec-item">
                   <span class="spec-key">
                     <span class="status-dot dot-pending"></span>
-                    ONNX Inference Weights
+                    YOLOv8 Model Weights
                   </span>
-                  <span class="spec-val">Awaiting model file</span>
+                  <span class="spec-val">Model status reported by API</span>
                 </div>
                 <div class="spec-item">
                   <span class="spec-key">
@@ -1551,7 +1553,7 @@ table.data-table tr:hover td { background: #f8fcfa; }
                 <div class="spec-item">
                   <span class="spec-key">
                     <span class="status-dot dot-pending"></span>
-                    ONNX Weights (`best.onnx`)
+                    ONNX Weights (`yolov8n.pt`)
                   </span>
                   <span class="spec-val" style="color:var(--amber)">Awaiting File</span>
                 </div>
@@ -1774,6 +1776,12 @@ async function checkHealth(silent = false) {
     const result = await discoverApiBase();
     const base = result.base;
     setApiStatus('Connected', 'Health endpoint responded 200 OK');
+    $('statModel').textContent = result.data.model_loaded ? 'Loaded' : 'Not loaded';
+    
+    $('modelStatusText').textContent = result.data.model_loaded ? 'Loaded' : 'Unloaded';
+    $('modelPill').className = result.data.model_loaded ? 'badge badge-ready' : 'badge badge-pending';
+    $('modelDot').className = result.data.model_loaded ? 'status-dot dot-ready' : 'status-dot dot-pending';
+
     $('healthPill').className = 'badge badge-ready';
     $('healthPill').textContent = 'CONNECTED';
     msg.className = 'tech-notice success';
@@ -2272,6 +2280,7 @@ setApiStatus('Not checked', 'Automatically detecting local or LinuxONE backend')
 renderActivity();
 // Detect the available backend each time this HTML is opened; no manual URL switching needed.
 checkHealth(true).catch(() => {});
+
 </script>
 </body>
 </html>
